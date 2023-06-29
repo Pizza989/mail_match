@@ -26,7 +26,7 @@ class MailBox(imaplib.IMAP4_SSL):
     
     def fetch_emails(self, mailbox="INBOX", parts="ALL"):
         self.select(mailbox)
-        for mail in self.fetch("0:*", parts)[1]:
+        for mail in self.fetch("1:*", parts)[1]:
             yield mail
 
     def modify_flags(self, message_set: str, add_flags: list[str] | None = None, remove_flags: list[str] | None = None, mailbox: str = "INBOX"):
@@ -46,8 +46,7 @@ if __name__ == "__main__":
         config = json.load(file)
 
     m = MailBox(config, (getpass.getpass(prompt="Email: "), getpass.getpass()))
-    for mail in m.fetch_emails(parts="FLAGS"):
+    for mail in m.fetch_emails("INBOX", "BODY[HEADER.FIELDS (SUBJECT)]"):
         print(mail)
-        print(m.get_flags(0))
         time.sleep(1)
 
