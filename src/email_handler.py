@@ -24,15 +24,21 @@ class MailBox(imaplib.IMAP4_SSL):
         super().__init__(host, port, keyfile, certfile, ssl.create_default_context(), timeout)
         self.login(*creds)
     
-    def fetch_emails(self, mailbox="INBOX"):
+    def fetch_emails(self, mailbox="INBOX", parts="ALL"):
         self.select(mailbox)
-        for mail in self.fetch("0:*", "ALL")[1]:
+        for mail in self.fetch("0:*", parts)[1]:
             yield mail
 
-    def modify_labels(self, message_set: str, add_labels: list[str], remove_labels: list[str]):
-        self.store(message_set, "+FLAGS.SILENT", " ".join(add_labels))
-        self.store(message_set, "-FLAGS.SILENT", " ".join(remove_labels))
+    def modify_flags(self, message_set: str, add_flags: list[str] | None = None, remove_flags: list[str] | None = None, mailbox: str = "INBOX"):
+        self.select(mailbox)
+        if add_flags:
+            self.store(message_set, "+FLAGS.SILENT", " ".join(add_flags))
+        if remove_flags:
+            self.store(message_set, "-FLAGS.SILENT", " ".join(remove_flags))
 
+    def get_flags(self, message_num: int, mailbox: str = "INBOX"):
+        self.select(mailbox)
+        return self.fetch(str(message_num), "FLAGS")[1]
 
 
 if __name__ == "__main__":
@@ -40,7 +46,8 @@ if __name__ == "__main__":
         config = json.load(file)
 
     m = MailBox(config, (getpass.getpass(prompt="Email: "), getpass.getpass()))
-    for mail in m.fetch_emails():
+    for mail in m.fetch_emails(parts="FLAGS"):
         print(mail)
+        print(m.get_flags(0))
         time.sleep(1)
 
