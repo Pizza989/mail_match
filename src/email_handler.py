@@ -29,6 +29,12 @@ class MailBox(imaplib.IMAP4_SSL):
         for mail in self.fetch("0:*", "ALL")[1]:
             yield mail
 
+    def modify_labels(self, message_set: str, add_labels: list[str], remove_labels: list[str]):
+        self.store(message_set, "+FLAGS.SILENT", " ".join(add_labels))
+        self.store(message_set, "-FLAGS.SILENT", " ".join(remove_labels))
+
+
+
 if __name__ == "__main__":
     with open("config/default.json", "r") as file:
         config = json.load(file)
