@@ -26,8 +26,7 @@ class MailBox(imaplib.IMAP4_SSL):
     
     def fetch_emails(self, mailbox="INBOX", parts="ALL"):
         self.select(mailbox)
-        for mail in self.fetch("1:*", parts)[1]:
-            yield mail
+        return self.fetch("1:*", parts)[1]
 
     def modify_flags(self, message_set: str, add_flags: list[str] | None = None, remove_flags: list[str] | None = None, mailbox: str = "INBOX"):
         self.select(mailbox)
