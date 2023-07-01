@@ -9,7 +9,7 @@ class MailBox(imaplib.IMAP4_SSL):
         """__init__.
 
         :param self:
-        :param config: Must include 'host' and 'port'. Can also define 'keyfile', 'certfile', 'timeout'
+        :param config: Must include 'host':str and 'port':int. Can also define 'keyfile':str, 'certfile':str, 'timeout':int
         :type config: dict
         :param creds: (username|email, password)
         :type creds: tuple
@@ -25,19 +25,46 @@ class MailBox(imaplib.IMAP4_SSL):
         self.login(*creds)
     
     def fetch_emails(self, mailbox="INBOX", parts="ALL"):
+        """fetch_emails.
+        Fetches all emails within the specified mailbox sorted ascendingly with their date
+
+        :param self:
+        :param mailbox: which mailbox to use
+        :param parts: what parts of each mail to include lookup rfc2060 for syntax
+        """
         self.select(mailbox)
         return self.fetch("1:*", parts)[1]
 
     def modify_flags(self, message_set: str, add_flags: list[str] | None = None, remove_flags: list[str] | None = None, mailbox: str = "INBOX"):
+        """modify_flags.
+
+        :param self:
+        :param message_set: defined in rfc2060
+        :type message_set: str
+        :param add_flags: wich flags to add
+        :type add_flags: list[str] | None
+        :param remove_flags: which flags to remove
+        :type remove_flags: list[str] | None
+        :param mailbox: what mailbox to use
+        :type mailbox: str
+        """
         self.select(mailbox)
         if add_flags:
             self.store(message_set, "+FLAGS.SILENT", " ".join(add_flags))
         if remove_flags:
             self.store(message_set, "-FLAGS.SILENT", " ".join(remove_flags))
 
-    def get_flags(self, message_num: int, mailbox: str = "INBOX"):
+    def get_flags(self, message_set: str, mailbox: str = "INBOX"):
+        """get_flags.
+
+        :param self:
+        :param message_set: defined in rfc2060
+        :type message_set: str
+        :param mailbox: which mailbox to use
+        :type mailbox: str
+        """
         self.select(mailbox)
-        return self.fetch(str(message_num), "FLAGS")[1]
+        return self.fetch(message_set, "FLAGS")[1]
 
 
 if __name__ == "__main__":
