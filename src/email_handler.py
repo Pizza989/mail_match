@@ -9,7 +9,7 @@ class MailBox(imaplib.IMAP4_SSL):
         """__init__.
 
         :param self:
-        :param config: Must include 'host':str and 'port':int. Can also define 'keyfile':str, 'certfile':str, 'timeout':int
+        :param config: Must include 'host':str and 'port':int. Can also define 'keyfile':str, 'certfile':str, 'timeout':str
         :type config: dict
         :param creds: (username|email, password)
         :type creds: tuple
