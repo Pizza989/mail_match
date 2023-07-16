@@ -73,13 +73,19 @@ class MailBox(imaplib.IMAP4_SSL):
         :param parts:
         :type parts: str
         """
-        
-        _, args = self.select(mailbox)
-        length = int(args[0].decode())  # TODO: proper error handling
 
-        for i in range(length, 1, -1):
-            payload = self.fetch(str(i), parts)[1][0]
-            yield parse(payload), int(payload.decode().split()[0])  # TODO: erros lmao, as if. last is index
+        try:
+            _, args = self.select(mailbox)
+            length = int(args[0].decode())
+            for i in range(length, 1, -1):
+                typ, payload = self.fetch(str(i), "(RFC822)")
+                for response_part in payload:
+                    if isinstance(response_part, tuple):
+                        yield dict(email.message_from_bytes(response_part[1])), i
+                        break
+
+        except imaplib.IMAP4_SSL.error as error:
+            raise error
 
 
     def modify_flags(self, message_set: str, add_flags: list[str] | None = None, remove_flags: list[str] | None = None, mailbox: str = "INBOX"):
@@ -116,6 +122,8 @@ class MailBox(imaplib.IMAP4_SSL):
 
 if __name__ == "__main__":
     m = MailBox({"host": "imap.strato.de", "port": 993}, ("noah@simai.de", getpass.getpass()))
-    for mail in m.emails("INBOX"):
-        print(mail)
+    for mail, index in m.emails("INBOX"):
+        for header in ["Subject", "From", "To", "Date"]:
+            print("%-8s: %s" % (header.upper(), mail[header]))
+        print()
 
