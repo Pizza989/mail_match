@@ -1,8 +1,8 @@
+from email.policy import default
 import imaplib
 import ssl
 import time
-import json
-import getpass
+import email.parser
 
 class MailBox(imaplib.IMAP4_SSL):
     def __init__(self, config: dict, creds: tuple):
@@ -24,16 +24,14 @@ class MailBox(imaplib.IMAP4_SSL):
         super().__init__(host, port, keyfile, certfile, ssl.create_default_context(), timeout)
         self.login(*creds)
     
-    def fetch_emails(self, mailbox="INBOX", parts="ALL"):
-        """fetch_emails.
-        Fetches all emails within the specified mailbox sorted ascendingly with their date
+    def emails(self, mailbox: str = "INBOX", parts: str = "ALL"):
+        _, args = self.select(mailbox)
+        length = int(args[0].decode())  # TODO: proper error handling
 
-        :param self:
-        :param mailbox: which mailbox to use
-        :param parts: what parts of each mail to include lookup rfc2060 for syntax
-        """
-        self.select(mailbox)
-        return self.fetch("1:*", parts)[1]
+        for i in range(1, length):
+            payload = self.fetch(str(i), parts)[1][0]
+            yield email.parser.BytesParser(policy=default).parsebytes(payload), int(payload.decode().split()[0])  # TODO: erros lmao, as if. last is index
+
 
     def modify_flags(self, message_set: str, add_flags: list[str] | None = None, remove_flags: list[str] | None = None, mailbox: str = "INBOX"):
         """modify_flags.
@@ -68,11 +66,7 @@ class MailBox(imaplib.IMAP4_SSL):
 
 
 if __name__ == "__main__":
-    with open("config/default.json", "r") as file:
-        config = json.load(file)
-
-    m = MailBox(config, (getpass.getpass(prompt="Email: "), getpass.getpass()))
-    for mail in m.fetch_emails("INBOX", "BODY[HEADER.FIELDS (SUBJECT)]"):
-        print(mail)
-        time.sleep(1)
+    m = MailBox({"host": "imap.strato.de", "port": 993}, ("noah@simai.de", ""))
+    for mail in m.emails("INBOX"):
+        print(type(mail[0]))
 
