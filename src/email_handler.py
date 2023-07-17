@@ -25,8 +25,9 @@ class MailBox(imaplib.IMAP4_SSL):
         timeout = probe_val("timeout")
         super().__init__(host, port, keyfile, certfile, ssl.create_default_context(), timeout)
         self.login(*creds)
-    
-    def emails(self, mailbox: str = "INBOX"):  # TODO: figure this out
+   
+
+    def emails(self, mailbox: str = "INBOX"):
         """emails. will return a dict containing all the neccessary data in the future
 
         :param self:

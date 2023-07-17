@@ -20,7 +20,7 @@ def create_profile_picture(email_from: str):
     color = (random.randint(0, 123), random.randint(0, 123), random.randint(0, 123))
     image = Image.new('RGB', (size, size), color=color)
     draw = ImageDraw.Draw(image)
-    font = ImageFont.truetype("arial.ttf", size/2)
+    font = ImageFont.truetype("arial.ttf", size // 2)
     draw.text((size/2, size/2), email_from.capitalize()[0] , font=font, anchor="mm", color=get_contrast_color(color))
     image.save('src/static/profile_picture.png')
 
@@ -58,13 +58,12 @@ class UI(QMainWindow):
 
         self.show()
 
-    def load_email(self, email: dict, index: int):
+    def load_email(self, email, index: int):
         self.subject_label.setText(email["Subject"])
         self.date_label.setText(email["Date"])
         self.from_label.setText(email["From"])
         create_profile_picture(email["From"])
         self.pfp_label.setPixmap(QPixmap("src/static/profile_picture.png"))
-        # self.email_body_browser.setText(email["Content"]) TODO: No words needed xD
 
         self.__index = index
 
@@ -85,3 +84,4 @@ class UI(QMainWindow):
 app = QApplication(sys.argv)
 window = UI()
 app.exec_()
+
