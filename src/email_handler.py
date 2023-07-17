@@ -1,47 +1,9 @@
-from email.policy import default
 import email.utils
+import email.message
 import imaplib
 import ssl
-import os
-import random
 import email.parser
 import getpass
-
-def parse(email_b, storage_path='./attachments'):
-    # email_b = binary email (b'...'), storage_path = relative or absolute path to store attachments
-    email_message = email.message_from_bytes(email_b)  # converts raw email to email object
-
-    parsed_dict = {
-        'from': email.utils.parseaddr(email_message['From']),
-        'to': email_message['to'],
-        'subject': email_message['Subject'],
-        'body_plain': '',
-        'body_html': '',
-        'attachments': []
-    }
-
-    for part in email_message.walk():  # iterates trough all parts of the email
-        filename = part.get_filename()
-
-        if bool(filename):  # if the part is actually an attachment, it will be True
-            path = os.path.join(storage_path, filename)
-            while os.path.isfile(path):  # while filename is already in use, try adding a random digit
-                filesplit = filename.split('.')
-                filename = filesplit[0] + '_' + str(random.randint(0, 99)) + '.' + filesplit[1]
-                path = os.path.join(storage_path, filename)
-
-            fp = open(path, 'wb')  # open/create attachment file
-            parsed_dict['attachments'].append(filename)
-            fp.write(part.get_payload(decode=True))
-            fp.close()
-
-        else:
-            if part.get_content_type() == 'text/plain':  # save plain text email body
-                parsed_dict['body_plain'] = part.get_payload(decode=True).decode('utf-8')
-            elif part.get_content_type() == 'text/html':  # save html email body
-                parsed_dict['body_html'] = part.get_payload(decode=True).decode('utf-8')
-
-    return parsed_dict
 
 
 class MailBox(imaplib.IMAP4_SSL):
@@ -64,7 +26,7 @@ class MailBox(imaplib.IMAP4_SSL):
         super().__init__(host, port, keyfile, certfile, ssl.create_default_context(), timeout)
         self.login(*creds)
     
-    def emails(self, mailbox: str = "INBOX", parts: str = "ALL"):  # TODO: figure this out
+    def emails(self, mailbox: str = "INBOX"):  # TODO: figure this out
         """emails. will return a dict containing all the neccessary data in the future
 
         :param self:
@@ -78,10 +40,11 @@ class MailBox(imaplib.IMAP4_SSL):
             _, args = self.select(mailbox)
             length = int(args[0].decode())
             for i in range(length, 1, -1):
-                typ, payload = self.fetch(str(i), "(RFC822)")
+                _, payload = self.fetch(str(i), "(BODY.PEEK[HEADER] BODY.PEEK[TEXT])")
+                print(payload)
                 for response_part in payload:
                     if isinstance(response_part, tuple):
-                        yield dict(email.message_from_bytes(response_part[1])), i
+                        yield email.message_from_bytes(response_part[1]), i
                         break
 
         except imaplib.IMAP4_SSL.error as error:
@@ -123,7 +86,6 @@ class MailBox(imaplib.IMAP4_SSL):
 if __name__ == "__main__":
     m = MailBox({"host": "imap.strato.de", "port": 993}, ("noah@simai.de", getpass.getpass()))
     for mail, index in m.emails("INBOX"):
-        for header in ["Subject", "From", "To", "Date"]:
-            print("%-8s: %s" % (header.upper(), mail[header]))
-        print()
+        print(mail)
+        exit()
 
