@@ -84,7 +84,14 @@
               </size>
              </property>
              <property name="text">
-              <string>sendername</string>
+              <string>from</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="to_label">
+             <property name="text">
+              <string>to</string>
              </property>
             </widget>
            </item>
@@ -109,7 +116,7 @@
               </size>
              </property>
              <property name="text">
-              <string>sendingtime</string>
+              <string>date</string>
              </property>
             </widget>
            </item>
@@ -177,11 +184,23 @@
      <x>0</x>
      <y>0</y>
      <width>878</width>
-     <height>21</height>
+     <height>30</height>
     </rect>
    </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <addaction name="actionOpen_Config"/>
+   </widget>
+   <addaction name="menuFile"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
+  <action name="actionOpen_Config">
+   <property name="text">
+    <string>Open Config</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections/>
