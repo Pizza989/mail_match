@@ -126,6 +126,9 @@
        </item>
        <item>
         <widget class="QTextEdit" name="body_textedit">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <property name="readOnly">
           <bool>false</bool>
          </property>

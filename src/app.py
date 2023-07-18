@@ -1,7 +1,7 @@
 import getpass
 import os
 
-from PyQt5.QtWidgets import QDialog, QFrame, QLineEdit, QMessageBox, QPushButton, QLabel, QMainWindow, QApplication, QTextEdit
+from PyQt5.QtWidgets import QCheckBox, QDialog, QFrame, QLineEdit, QMessageBox, QPushButton, QLabel, QMainWindow, QApplication, QTextEdit
 from PyQt5 import uic
 import sys
 import src.email_handler
@@ -60,6 +60,7 @@ class ImapConfig(ConfigDialog):
         self.port_lineedit: QLineEdit
         self.email_addr_lineedit: QLineEdit
         self.password_lineedit: QLineEdit
+        self.save_checkbox: QCheckBox
  
         self.accepted.connect(self.write_config)
     
@@ -71,6 +72,9 @@ class ImapConfig(ConfigDialog):
 
     def get_config(self):
         self.exec_()
+        if self.save_checkbox.isChecked():
+            with open(IMAP_CONFIG_PATH, "w") as file:
+                json.dump(self.config, file)
         return self.config
 
 
@@ -86,6 +90,7 @@ class AppConfig(ConfigDialog):
         self.lsr_lineedit: QLineEdit
         self.rsa_lineedit: QLineEdit
         self.rsr_lineedit: QLineEdit
+        self.save_checkbox: QCheckBox
 
         self.accepted.connect(self.write_config)
 
@@ -97,6 +102,9 @@ class AppConfig(ConfigDialog):
 
     def get_config(self):
         self.exec_()
+        if self.save_checkbox.isChecked():
+            with open(APP_CONFIG_PATH, "w") as file:
+                json.dump(self.config, file)
         return self.config
 
 
@@ -108,6 +116,7 @@ class UI(QMainWindow):
         self.subject_label: QLabel
         self.pfp_label: QLabel
         self.from_label: QLabel
+        self.to_label: QLabel
         self.date_label: QLabel
         self.body_textedit: QTextEdit
         self.left_button: QPushButton
@@ -137,7 +146,7 @@ class UI(QMainWindow):
             popup = ImapConfig(self)
             self.imap_config = popup.get_config()  
          
-        # Load App Settings
+        # Load App Config
         if os.path.exists(APP_CONFIG_PATH):
             with open(APP_CONFIG_PATH, "r") as file:
                 self.app_config = json.load(file)
@@ -148,6 +157,7 @@ class UI(QMainWindow):
         # Connect to MailBox
         self.mailbox = src.email_handler.MailBox(self.imap_config, (self.imap_config["email_address"], self.imap_config["password"]))
         self.email_gen = self.mailbox.emails()
+        self.load_email(*next(self.email_gen))
 
         self.show()
 
@@ -155,6 +165,7 @@ class UI(QMainWindow):
         self.subject_label.setText(email["Subject"])
         self.date_label.setText(email["Date"])
         self.from_label.setText(email["From"])
+        self.to_label.setText(email["To"])
         create_profile_picture(email["From"])
         self.pfp_label.setPixmap(QPixmap("src/static/profile_picture.png"))
         for part in email.walk():
@@ -165,8 +176,6 @@ class UI(QMainWindow):
                     self.body_textedit.setHtml(part.get_payload())
                 case _:
                     continue
-        for attachement in email.iter_attachments():
-            print(attachement)
 
         self.__index = index
 
