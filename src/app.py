@@ -3,7 +3,7 @@ import getpass
 from PyQt5.QtWidgets import QFrame, QPushButton, QLabel, QMainWindow, QApplication, QTextEdit
 from PyQt5 import uic
 import sys
-import email_handler
+import src.email_handler
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 import random
 import string
@@ -51,7 +51,7 @@ class UI(QMainWindow):
 
         with open("src/config/default.json", "r") as file:
             self.config = json.load(file)
-        self.mailbox = email_handler.MailBox(self.config, (getpass.getpass("Email: "), getpass.getpass()))
+        self.mailbox = src.email_handler.MailBox(self.config, (getpass.getpass("Email: "), getpass.getpass()))
         self.email_gen = self.mailbox.emails()
 
         self.load_email(*next(self.email_gen))
@@ -64,6 +64,14 @@ class UI(QMainWindow):
         self.from_label.setText(email["From"])
         create_profile_picture(email["From"])
         self.pfp_label.setPixmap(QPixmap("src/static/profile_picture.png"))
+        for part in email.walk():
+            match part.get_content_type():
+                case "text/plain":
+                    self.body_textedit.setPlainText(part.get_payload())
+                case "text/html":
+                    self.body_textedit.setHtml(part.get_payload())
+                case _:
+                    continue
 
         self.__index = index
 

@@ -1,5 +1,5 @@
 {
-  "host": "",
+  "host": "imap.strato.de",
   "port": 993,
   "keyfile": null,
   "certfile": null,

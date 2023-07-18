@@ -1,9 +1,11 @@
 import email.utils
+from email.policy import default
 import email.message
 import imaplib
 import ssl
 import email.parser
 import getpass
+
 
 
 class MailBox(imaplib.IMAP4_SSL):
@@ -41,11 +43,11 @@ class MailBox(imaplib.IMAP4_SSL):
             _, args = self.select(mailbox)
             length = int(args[0].decode())
             for i in range(length, 1, -1):
-                _, payload = self.fetch(str(i), "(BODY.PEEK[HEADER] BODY.PEEK[TEXT])")
-                print(payload)
+                _, payload = self.fetch(str(i), "(RFC822)")
                 for response_part in payload:
                     if isinstance(response_part, tuple):
-                        yield email.message_from_bytes(response_part[1]), i
+                        msg = email.message_from_bytes(response_part[1], policy=default)
+                        yield msg, i
                         break
 
         except imaplib.IMAP4_SSL.error as error:
@@ -87,6 +89,11 @@ class MailBox(imaplib.IMAP4_SSL):
 if __name__ == "__main__":
     m = MailBox({"host": "imap.strato.de", "port": 993}, ("noah@simai.de", getpass.getpass()))
     for mail, index in m.emails("INBOX"):
-        print(mail)
-        exit()
-
+        for part in mail.walk():
+            match part.get_content_type():
+                case "text/plain":
+                    print(part.get_payload())
+                case "text/html":
+                    print(part.get_payload())
+                case _:
+                    print("oh shit oh fuck")

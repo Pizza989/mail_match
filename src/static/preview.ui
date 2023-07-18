@@ -118,7 +118,7 @@
         </layout>
        </item>
        <item>
-        <widget class="QPlainTextEdit" name="body_textedit">
+        <widget class="QTextEdit" name="body_textedit">
          <property name="readOnly">
           <bool>false</bool>
          </property>
