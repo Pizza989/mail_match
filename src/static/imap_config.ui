@@ -73,6 +73,12 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>host_lineedit</tabstop>
+  <tabstop>port_lineedit</tabstop>
+  <tabstop>email_addr_lineedit</tabstop>
+  <tabstop>password_lineedit</tabstop>
+ </tabstops>
  <resources/>
  <connections>
   <connection>
