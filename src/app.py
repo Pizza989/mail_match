@@ -6,7 +6,6 @@ import sys
 import email_handler
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 import random
-import string
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QApplication, QLabel
 import json
@@ -51,7 +50,10 @@ class UI(QMainWindow):
 
         with open("src/config/default.json", "r") as file:
             self.config = json.load(file)
-        self.mailbox = email_handler.MailBox(self.config, (getpass.getpass("Email: "), getpass.getpass()))
+        credentials = (getpass.getpass("Email: "), getpass.getpass())
+        if(self.config["host"] == ""):
+            self.config["host"] = "imap." + credentials[0].split("@")[1]
+        self.mailbox = email_handler.MailBox(self.config, credentials)
         self.email_gen = self.mailbox.emails()
 
         self.load_email(*next(self.email_gen))
