@@ -1,15 +1,18 @@
 import getpass
+import os
 
-from PyQt5.QtWidgets import QFrame, QPushButton, QLabel, QMainWindow, QApplication, QTextEdit
+from PyQt5.QtWidgets import QDialog, QFrame, QLineEdit, QMessageBox, QPushButton, QLabel, QMainWindow, QApplication, QTextEdit
 from PyQt5 import uic
 import sys
 import src.email_handler
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 import random
-import string
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QApplication, QLabel
 import json
+
+IMAP_CONFIG_PATH = "src/config/imap.json"
+APP_CONFIG_PATH = "src/config/app.json"
 
 def get_contrast_color(color):
     luminance = (0.299 * color[0] + 0.587 * color[1] + 0.114 * color[2]) / 255
@@ -23,6 +26,78 @@ def create_profile_picture(email_from: str):
     font = ImageFont.truetype("arial.ttf", size // 2)
     draw.text((size/2, size/2), email_from.capitalize()[0] , font=font, anchor="mm", color=get_contrast_color(color))
     image.save('src/static/profile_picture.png')
+
+class ConfigDialog(QDialog):
+    def __init__(self, parent) -> None:
+       super().__init__(parent)
+       self.config = {}
+       self.setModal(True)
+
+    def write_config(self):
+        raise NotImplementedError()
+    
+    def get_config(self):
+        raise NotImplementedError()
+
+    def reject(self):
+        msg_box = QMessageBox()
+        msg_box.setIcon(QMessageBox.Warning)
+        msg_box.setWindowTitle("Cannot Reject")
+        msg_box.setText("Please click the 'Save' button to close the dialog.")
+        msg_box.exec_()
+
+
+# TODO: Refactor to subclasses
+class ImapConfig(ConfigDialog):
+    def __init__(self, parent) -> None:
+        super().__init__(parent)
+        uic.loadUi("src/static/imap_config.ui", self)
+        self.host_label: QLabel
+        self.port_label: QLabel
+        self.email_addr_label: QLabel
+        self.password_label: QLabel
+        self.host_lineedit: QLineEdit
+        self.port_lineedit: QLineEdit
+        self.email_addr_lineedit: QLineEdit
+        self.password_lineedit: QLineEdit
+ 
+        self.accepted.connect(self.write_config)
+    
+    def write_config(self):
+        self.config["host"] = self.host_lineedit.text()
+        self.config["port"] = int(self.port_lineedit.text())
+        self.config["email_address"] = self.email_addr_lineedit.text()
+        self.config["password"] = self.password_lineedit.text()
+
+    def get_config(self):
+        self.exec_()
+        return self.config
+
+
+class AppConfig(ConfigDialog):
+    def __init__(self, parent) -> None:
+        super().__init__(parent)
+        uic.loadUi("src/static/app_config.ui", self)
+        self.lsa_label: QLabel
+        self.lsr_label: QLabel
+        self.rsa_label: QLabel
+        self.rsr_label: QLabel
+        self.lsa_lineedit: QLineEdit
+        self.lsr_lineedit: QLineEdit
+        self.rsa_lineedit: QLineEdit
+        self.rsr_lineedit: QLineEdit
+
+        self.accepted.connect(self.write_config)
+
+    def write_config(self):
+        self.config["lsa"] = self.lsa_lineedit.text().split()
+        self.config["lsr"] = self.lsr_lineedit.text().split()
+        self.config["rsa"] = self.rsa_lineedit.text().split()
+        self.config["rsr"] = self.rsr_lineedit.text().split()
+
+    def get_config(self):
+        self.exec_()
+        return self.config
 
 
 class UI(QMainWindow):
@@ -40,21 +115,39 @@ class UI(QMainWindow):
 
         self.left_button.clicked.connect(lambda: self.swipe(left=True))
         self.right_button.clicked.connect(lambda: self.swipe(left=False))
+       
+        self.imap_config = None
+        self.app_config = None
 
-        self.config = None  # TODO: Pop-Up to configure
         self.left_add = None
         self.left_rm = None
         self.right_add = None
         self.right_rm = None
 
+        self.mailbox = None
+        self.email_gen = None
+
         self.__index = None
+        
+        # Load Config
+        if os.path.exists(IMAP_CONFIG_PATH):
+            with open(IMAP_CONFIG_PATH, "r") as file:
+                self.imap_config = json.load(file)
+        else:
+            popup = ImapConfig(self)
+            self.imap_config = popup.get_config()  
+         
+        # Load App Settings
+        if os.path.exists(APP_CONFIG_PATH):
+            with open(APP_CONFIG_PATH, "r") as file:
+                self.app_config = json.load(file)
+        else:
+            popup = AppConfig(self)
+            self.app_config = popup.get_config()
 
-        with open("src/config/default.json", "r") as file:
-            self.config = json.load(file)
-        self.mailbox = src.email_handler.MailBox(self.config, (getpass.getpass("Email: "), getpass.getpass()))
+        # Connect to MailBox
+        self.mailbox = src.email_handler.MailBox(self.imap_config, (self.imap_config["email_address"], self.imap_config["password"]))
         self.email_gen = self.mailbox.emails()
-
-        self.load_email(*next(self.email_gen))
 
         self.show()
 
@@ -72,6 +165,8 @@ class UI(QMainWindow):
                     self.body_textedit.setHtml(part.get_payload())
                 case _:
                     continue
+        for attachement in email.iter_attachments():
+            print(attachement)
 
         self.__index = index
 
